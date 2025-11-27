@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Sales Order Tracker - Login</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <div id="loginScreen" class="container">
+    <h1>Login</h1>
+    <input type="password" id="passwordInput" placeholder="Enter Password">
+    <button onclick="login()">Login</button>
+    <p id="loginError" style="color:red;display:none;">Incorrect password</p>
+  </div>
+
+  <div id="appScreen" class="container" style="display:none;">
+    <h1>Sales Order Tracking</h1>
+    <input type="text" placeholder="Search orders..." class="search-bar" id="search">
+
+    <button class="add-btn" onclick="openAddForm()">Add New Order</button>
+    <button class="export-btn" onclick="exportCSV()">Export to CSV</button>
+    <button class="change-pass-btn" onclick="openChangePassword()">Change Password</button>
+
+    <table class="order-table" id="orderTable">
+      <thead>
+        <tr>
+          <th>Order ID</th>
+          <th>Customer</th>
+          <th>Status</th>
+          <th onclick="sortBy('amount')">Amount &#x25B2;&#x25BC;</th>
+          <th onclick="sortBy('date')">Date &#x25B2;&#x25BC;</th>
+        </tr>
+      </thead>
+      <tbody id="orderBody"></tbody>
+    </table>
+  </div>
+
+  <!-- Modal for Order Details -->
+  <div id="orderModal" class="modal">
+    <div class="modal-content">
+      <span class="close" onclick="closeModal()">&times;</span>
+      <h2>Order Details</h2>
+      <div id="orderDetails"></div>
+      <button class="edit-btn" onclick="openEditForm()">Edit Order</button>
+      <button class="delete-btn" onclick="deleteOrder()">Delete Order</button>
+    </div>
+  </div>
+
+  <!-- Modal for Add/Edit Form -->
+  <div id="formModal" class="modal">
+    <div class="modal-content">
+      <span class="close" onclick="closeForm()">&times;</span>
+      <h2 id="formTitle">Add New Order</h2>
+      <form id="orderForm">
+        <input type="hidden" id="editOrderId">
+        <label>Customer:</label>
+        <input type="text" id="customer" required><br>
+        <label>Amount:</label>
+        <input type="number" id="amount" required><br>
+        <label>Status:</label>
+        <select id="status">
+          <option value="Pending">Pending</option>
+          <option value="Shipped">Shipped</option>
+          <option value="Delivered">Delivered</option>
+        </select><br>
+        <label>Delivery Date:</label>
+        <input type="date" id="date" required><br>
+        <button type="submit">Save</button>
+      </form>
+    </div>
+  </div>
+
+  <!-- Modal for Change Password -->
+  <div id="passwordModal" class="modal">
+    <div class="modal-content">
+      <span class="close" onclick="closePasswordModal()">&times;</span>
+      <h2>Change Password</h2>
+      <input type="password" id="newPassword" placeholder="Enter New Password">
+      <button onclick="changePassword()">Save</button>
+    </div>
+  </div>
+
+  <script src="script.js"></script>
+</body>
+</html>
