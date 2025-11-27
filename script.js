@@ -1,3 +1,5 @@
+// Updated script.js — auto-sequence Order ID generation based on last numeric order number
+
 let orders = JSON.parse(localStorage.getItem('orders')) || [
   {id: '#1001', customer: 'John Smith', address: '', orderDate: '2024-04-20', deliveryDate: '2024-04-25', status: 'Pending', amount: 250, items: []},
   {id: '#1002', customer: 'Acme Corporation', address: '', orderDate: '2024-04-18', deliveryDate: '2024-04-22', status: 'Shipped', amount: 1200, items: []},
@@ -108,7 +110,8 @@ function showDetails(orderId) {
   const details = document.getElementById('orderDetails');
   if (!details) return;
 
-  let html = `<strong>Customer:</strong> ${escapeHtml(order.customer)}<br>`;
+  let html = `<strong>Order #:</strong> ${escapeHtml(order.id)}<br>`;
+  html += `<strong>Customer:</strong> ${escapeHtml(order.customer)}<br>`;
   html += `<strong>Address:</strong> ${escapeHtml(order.address || '')}<br>`;
   html += `<strong>Order Date:</strong> ${order.orderDate || ''}<br>`;
   html += `<strong>Delivery Date:</strong> ${order.deliveryDate || ''}<br>`;
@@ -148,6 +151,9 @@ function openAddForm() {
   const editId = document.getElementById('editOrderId');
   if (editId) editId.value = '';
 
+  const orderIdInput = document.getElementById('orderIdInput');
+  if (orderIdInput) { orderIdInput.value = ''; orderIdInput.disabled = false; }
+
   const customerEl = document.getElementById('customer');
   if (customerEl) customerEl.value = '';
 
@@ -181,6 +187,9 @@ function openEditForm() {
   const editId = document.getElementById('editOrderId');
   if (editId) editId.value = order.id;
 
+  const orderIdInput = document.getElementById('orderIdInput');
+  if (orderIdInput) { orderIdInput.value = order.id; orderIdInput.disabled = true; }
+
   const customerEl = document.getElementById('customer');
   if (customerEl) customerEl.value = order.customer;
 
@@ -206,14 +215,40 @@ const orderForm = document.getElementById('orderForm');
 if (orderForm) {
   orderForm.onsubmit = function(e) {
     e.preventDefault();
-    const id = document.getElementById('editOrderId').value || `#${Math.floor(Math.random()*10000)}`;
+
+    // Use editOrderId when editing; otherwise consider user-entered orderIdInput or auto-generate sequential id
+    const isEditing = !!document.getElementById('editOrderId').value;
+    let id;
+    if (isEditing) {
+      id = document.getElementById('editOrderId').value;
+    } else {
+      let manual = (document.getElementById('orderIdInput').value || '').trim();
+      if (manual) {
+        // normalize manual ID to start with '#'
+        if (!manual.startsWith('#')) manual = '#' + manual;
+        // check duplicate
+        if (orders.some(o => o.id === manual)) {
+          alert('Order number already exists. Please enter a different number.');
+          return;
+        }
+        id = manual;
+      } else {
+        // Auto-sequence: find highest numeric suffix and add 1. If none found start at 1001.
+        const nums = orders.map(o => {
+          const m = String(o.id).match(/(\d+)/);
+          return m ? parseInt(m[1], 10) : NaN;
+        }).filter(n => !isNaN(n));
+        const next = nums.length === 0 ? 1001 : Math.max(...nums) + 1;
+        id = `#${next}`;
+      }
+    }
+
     const customer = document.getElementById('customer').value.trim();
     const address = document.getElementById('address').value.trim();
     const orderDate = document.getElementById('orderDate').value || new Date().toISOString().slice(0,10);
     const deliveryDate = document.getElementById('deliveryDate').value || '';
     const amount = currentItemsTotal();
     const status = document.getElementById('status').value;
-    const date = orderDate; // kept for backward compatibility if needed
 
     if (!customer) {
       alert('Please enter customer name');
@@ -223,9 +258,11 @@ if (orderForm) {
       if (!confirm('No items added. Save empty order?')) return;
     }
 
-    if (document.getElementById('editOrderId').value) {
+    if (isEditing) {
       const index = orders.findIndex(o => o.id === id);
-      orders[index] = {id, customer, address, orderDate, deliveryDate, status, amount, items: currentItems};
+      if (index > -1) {
+        orders[index] = {id, customer, address, orderDate, deliveryDate, status, amount, items: currentItems};
+      }
     } else {
       orders.push({id, customer, address, orderDate, deliveryDate, status, amount, items: currentItems});
     }
