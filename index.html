@@ -27,9 +27,10 @@
         <tr>
           <th>Order ID</th>
           <th>Customer</th>
+          <th onclick="sortBy('orderDate')">Order Date &#x25B2;&#x25BC;</th>
+          <th onclick="sortBy('deliveryDate')">Delivery Date &#x25B2;&#x25BC;</th>
           <th>Status</th>
           <th onclick="sortBy('amount')">Amount &#x25B2;&#x25BC;</th>
-          <th onclick="sortBy('date')">Date &#x25B2;&#x25BC;</th>
         </tr>
       </thead>
       <tbody id="orderBody"></tbody>
@@ -63,16 +64,20 @@
 
         <div style="display:flex; gap:12px; align-items:center; margin-bottom:8px;">
           <div style="flex:1;">
+            <label>Order Date:</label>
+            <input type="date" id="orderDate" style="width:100%;" />
+          </div>
+          <div style="flex:1;">
+            <label>Delivery Date:</label>
+            <input type="date" id="deliveryDate" style="width:100%;" />
+          </div>
+          <div style="flex:1;">
             <label>Status:</label>
             <select id="status" style="width:100%;">
               <option value="Pending">Pending</option>
               <option value="Shipped">Shipped</option>
               <option value="Delivered">Delivered</option>
             </select>
-          </div>
-          <div style="flex:1;">
-            <label>Delivery Date:</label>
-            <input type="date" id="date" style="width:100%;" />
           </div>
         </div>
 
