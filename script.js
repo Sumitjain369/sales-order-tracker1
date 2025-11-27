@@ -1,11 +1,11 @@
 let orders = JSON.parse(localStorage.getItem('orders')) || [
-  {id: '#1001', customer: 'John Smith', address: '', status: 'Pending', amount: 250, date: '2024-04-25', items: []},
-  {id: '#1002', customer: 'Acme Corporation', address: '', status: 'Shipped', amount: 1200, date: '2024-04-22', items: []},
-  {id: '#1003', customer: 'Sarah Johnson', address: '', status: 'Delivered', amount: 350, date: '2024-04-20', items: []}
+  {id: '#1001', customer: 'John Smith', address: '', orderDate: '2024-04-20', deliveryDate: '2024-04-25', status: 'Pending', amount: 250, items: []},
+  {id: '#1002', customer: 'Acme Corporation', address: '', orderDate: '2024-04-18', deliveryDate: '2024-04-22', status: 'Shipped', amount: 1200, items: []},
+  {id: '#1003', customer: 'Sarah Johnson', address: '', orderDate: '2024-04-15', deliveryDate: '2024-04-20', status: 'Delivered', amount: 350, items: []}
 ];
 
 let selectedOrderId = null;
-let sortDirection = {amount: 'asc', date: 'asc'};
+let sortDirection = {amount: 'asc', orderDate: 'asc', deliveryDate: 'asc'};
 let password = localStorage.getItem('appPassword') || 'admin123';
 
 // Items currently being edited/added in the form
@@ -87,7 +87,7 @@ function renderOrders(filter = '') {
     .filter(order => order.customer.toLowerCase().includes(filter.toLowerCase()) || order.id.includes(filter))
     .forEach(order => {
       const row = document.createElement('tr');
-      row.innerHTML = `<td>${order.id}</td><td>${escapeHtml(order.customer)}</td><td><span class="status ${order.status}">${order.status}</span></td><td>$${Number(order.amount).toFixed(2)}</td><td>${order.date}</td>`;
+      row.innerHTML = `<td>${order.id}</td><td>${escapeHtml(order.customer)}</td><td>${order.orderDate || ''}</td><td>${order.deliveryDate || ''}</td><td><span class="status ${order.status}">${order.status}</span></td><td>$${Number(order.amount).toFixed(2)}</td>`;
       row.onclick = () => showDetails(order.id);
       tbody.appendChild(row);
     });
@@ -110,7 +110,8 @@ function showDetails(orderId) {
 
   let html = `<strong>Customer:</strong> ${escapeHtml(order.customer)}<br>`;
   html += `<strong>Address:</strong> ${escapeHtml(order.address || '')}<br>`;
-  html += `<strong>Date:</strong> ${order.date}<br>`;
+  html += `<strong>Order Date:</strong> ${order.orderDate || ''}<br>`;
+  html += `<strong>Delivery Date:</strong> ${order.deliveryDate || ''}<br>`;
   html += `<strong>Status:</strong> ${order.status}<br>`;
   html += `<strong>Total:</strong> $${Number(order.amount).toFixed(2)}<br><hr>`;
 
@@ -156,8 +157,12 @@ function openAddForm() {
   const statusEl = document.getElementById('status');
   if (statusEl) statusEl.value = 'Pending';
 
-  const dateEl = document.getElementById('date');
-  if (dateEl) dateEl.value = '';
+  // Default order date = today
+  const orderDateEl = document.getElementById('orderDate');
+  const deliveryDateEl = document.getElementById('deliveryDate');
+  const today = new Date().toISOString().slice(0,10);
+  if (orderDateEl) orderDateEl.value = today;
+  if (deliveryDateEl) deliveryDateEl.value = '';
 
   const fm = document.getElementById('formModal');
   if (fm) fm.style.display = 'block';
@@ -185,8 +190,11 @@ function openEditForm() {
   const statusEl = document.getElementById('status');
   if (statusEl) statusEl.value = order.status;
 
-  const dateEl = document.getElementById('date');
-  if (dateEl) dateEl.value = order.date;
+  const orderDateEl = document.getElementById('orderDate');
+  if (orderDateEl) orderDateEl.value = order.orderDate || '';
+
+  const deliveryDateEl = document.getElementById('deliveryDate');
+  if (deliveryDateEl) deliveryDateEl.value = order.deliveryDate || '';
 
   const fm = document.getElementById('formModal');
   if (fm) fm.style.display = 'block';
@@ -201,9 +209,11 @@ if (orderForm) {
     const id = document.getElementById('editOrderId').value || `#${Math.floor(Math.random()*10000)}`;
     const customer = document.getElementById('customer').value.trim();
     const address = document.getElementById('address').value.trim();
+    const orderDate = document.getElementById('orderDate').value || new Date().toISOString().slice(0,10);
+    const deliveryDate = document.getElementById('deliveryDate').value || '';
     const amount = currentItemsTotal();
     const status = document.getElementById('status').value;
-    const date = document.getElementById('date').value;
+    const date = orderDate; // kept for backward compatibility if needed
 
     if (!customer) {
       alert('Please enter customer name');
@@ -215,9 +225,9 @@ if (orderForm) {
 
     if (document.getElementById('editOrderId').value) {
       const index = orders.findIndex(o => o.id === id);
-      orders[index] = {id, customer, address, status, amount, date, items: currentItems};
+      orders[index] = {id, customer, address, orderDate, deliveryDate, status, amount, items: currentItems};
     } else {
-      orders.push({id, customer, address, status, amount, date, items: currentItems});
+      orders.push({id, customer, address, orderDate, deliveryDate, status, amount, items: currentItems});
     }
 
     localStorage.setItem('orders', JSON.stringify(orders));
@@ -360,8 +370,10 @@ function sortBy(key) {
   orders.sort((a, b) => {
     if (key === 'amount') {
       return sortDirection[key] === 'asc' ? a.amount - b.amount : b.amount - a.amount;
-    } else if (key === 'date') {
-      return sortDirection[key] === 'asc' ? new Date(a.date) - new Date(b.date) : new Date(b.date) - new Date(a.date);
+    } else if (key === 'orderDate' || key === 'deliveryDate') {
+      const da = new Date(a[key] || '1970-01-01');
+      const db = new Date(b[key] || '1970-01-01');
+      return sortDirection[key] === 'asc' ? da - db : db - da;
     }
   });
   sortDirection[key] = sortDirection[key] === 'asc' ? 'desc' : 'asc';
@@ -370,9 +382,9 @@ function sortBy(key) {
 }
 
 function exportCSV() {
-  let csvContent = 'Order ID,Customer,Status,Amount,Date\n';
+  let csvContent = 'Order ID,Customer,Order Date,Delivery Date,Status,Amount,Date\n';
   orders.forEach(order => {
-    csvContent += `${order.id},${order.customer},${order.status},${order.amount},${order.date}\n`;
+    csvContent += `${order.id},${escapeCsv(order.customer)},${order.orderDate || ''},${order.deliveryDate || ''},${order.status},${order.amount},${order.orderDate || ''}\n`;
   });
   const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
   const link = document.createElement('a');
@@ -389,4 +401,8 @@ function escapeHtml(str) {
   return str.replace(/[&<>"']/g, function(m) {
     return ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'})[m];
   });
+}
+function escapeCsv(str) {
+  if (str == null) return '';
+  return `"${String(str).replace(/"/g, '""')}"`;
 }
